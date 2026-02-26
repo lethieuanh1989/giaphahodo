@@ -60,7 +60,7 @@ type View = 'popup' | 'detail' | 'tree' | 'generations' | 'search' | 'timeline';
       <app-person-detail
         *ngIf="currentView === 'detail' && currentPerson"
         [person]="currentPerson"
-        [canEdit]="isLoggedIn"
+        [canEdit]="true"
         [homePersonId]="homePerson?.id"
         (navigateTo)="navigateToPerson($event)"
         (personSaved)="onPersonSaved($event)"

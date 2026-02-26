@@ -560,7 +560,7 @@ import { StorageService } from '../../services/storage.service';
 })
 export class PersonDetailComponent implements OnInit, OnChanges {
   @Input() person!: Person;
-  @Input() canEdit = false;
+  @Input() canEdit = true; // TẠM THỜI: cho phép tất cả chỉnh sửa
   @Input() homePersonId?: string;
   @Output() navigateTo = new EventEmitter<string>();
   @Output() personSaved = new EventEmitter<Person>();

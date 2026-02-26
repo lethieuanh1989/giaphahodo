@@ -39,13 +39,13 @@ function generateContent(production) {
   return `export const environment = {
   production: ${production},
   firebaseConfig: {
-    apiKey: "${apiKey}",
-    authDomain: "${authDomain}",
-    projectId: "${projectId}",
-    storageBucket: "${storageBucket}",
-    messagingSenderId: "${messagingSenderId}",
-    appId: "${appId}",
-    measurementId: "${measurementId}"
+    apiKey: ${JSON.stringify(apiKey)},
+    authDomain: ${JSON.stringify(authDomain)},
+    projectId: ${JSON.stringify(projectId)},
+    storageBucket: ${JSON.stringify(storageBucket)},
+    messagingSenderId: ${JSON.stringify(messagingSenderId)},
+    appId: ${JSON.stringify(appId)},
+    measurementId: ${JSON.stringify(measurementId)}
   },
   allowedEmails: ${JSON.stringify(allowedEmails)},
 };
