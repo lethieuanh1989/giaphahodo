@@ -1,0 +1,328 @@
+[
+  {
+    "id": "doi1-phuchuu",
+    "hoTen": "Cụ Đỗ Phúc Hưu",
+    "doiThu": 1,
+    "viTri": "Thủy Tổ Khảo",
+    "conIds": ["doi2-chinhtam"],
+    "anhChiEmIds": [],
+    "ghiChu": "Thủy Tổ Khảo - Đời thứ 1"
+  },
+  {
+    "id": "doi2-chinhtam",
+    "hoTen": "Cụ Chính Tâm",
+    "doiThu": 2,
+    "chaId": "doi1-phuchuu",
+    "conIds": ["doi3-huyenan"],
+    "anhChiEmIds": [],
+    "ghiChu": "Đời thứ 2"
+  },
+  {
+    "id": "doi3-huyenan",
+    "hoTen": "Cụ Huyền Ân",
+    "doiThu": 3,
+    "chaId": "doi2-chinhtam",
+    "conIds": ["doi4-trucchinh"],
+    "anhChiEmIds": [],
+    "ghiChu": "Đời thứ 3"
+  },
+  {
+    "id": "doi4-trucchinh",
+    "hoTen": "Cụ Trực Chính",
+    "doiThu": 4,
+    "chaId": "doi3-huyenan",
+    "conIds": ["doi5-phucnhan"],
+    "anhChiEmIds": [],
+    "ghiChu": "Đời thứ 4"
+  },
+  {
+    "id": "doi5-phucnhan",
+    "hoTen": "Cụ Phúc Nhân",
+    "doiThu": 5,
+    "chaId": "doi4-trucchinh",
+    "conIds": ["doi6-giaba"],
+    "anhChiEmIds": [],
+    "ghiChu": "Đời thứ 5"
+  },
+  {
+    "id": "doi6-giaba",
+    "hoTen": "Cụ Già Bá",
+    "doiThu": 6,
+    "chaId": "doi5-phucnhan",
+    "conIds": ["doi7-giatru", "doi7-phuctrung"],
+    "anhChiEmIds": [],
+    "ghiChu": "Đời thứ 6"
+  },
+  {
+    "id": "doi7-giatru",
+    "hoTen": "Cụ Già Trứ",
+    "doiThu": 7,
+    "viTri": "Con cả",
+    "chaId": "doi6-giaba",
+    "conIds": ["doi8-ngotien"],
+    "anhChiEmIds": ["doi7-phuctrung"],
+    "nganhId": 1,
+    "ghiChu": "Cụ Tổ Ngành I - Con cả"
+  },
+  {
+    "id": "doi7-phuctrung",
+    "hoTen": "Cụ Đỗ Phúc Trung",
+    "doiThu": 7,
+    "viTri": "Con Thứ",
+    "chaId": "doi6-giaba",
+    "conIds": ["doi8-huuvi"],
+    "anhChiEmIds": ["doi7-giatru"],
+    "nganhId": 2,
+    "ghiChu": "Cụ Tổ Ngành II - Con Thứ"
+  },
+  {
+    "id": "doi8-ngotien",
+    "hoTen": "Cụ Ngộ Tiên",
+    "doiThu": 8,
+    "viTri": "Con cả",
+    "chaId": "doi7-giatru",
+    "conIds": ["doi9-ke", "doi9-hoang"],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 8 - Ngành I - Con cả"
+  },
+  {
+    "id": "doi8-huuvi",
+    "hoTen": "Cụ Ngũ Vị",
+    "doiThu": 8,
+    "viTri": "Con Thứ",
+    "chaId": "doi7-phuctrung",
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 2,
+    "ghiChu": "Đời 8 - Ngành II - Con Thứ P.Tự"
+  },
+  {
+    "id": "doi9-ke",
+    "hoTen": "Cụ Kê",
+    "doiThu": 9,
+    "viTri": "Con cả",
+    "chaId": "doi8-ngotien",
+    "conIds": ["doi10-dung"],
+    "anhChiEmIds": ["doi9-hoang"],
+    "nganhId": 1,
+    "ghiChu": "Đời 9 - Con cả"
+  },
+  {
+    "id": "doi9-hoang",
+    "hoTen": "Cụ Hoằng",
+    "doiThu": 9,
+    "viTri": "Con Thứ",
+    "chaId": "doi8-ngotien",
+    "conIds": ["doi10-bang", "doi10-thinhmy", "doi10-huynh"],
+    "anhChiEmIds": ["doi9-ke"],
+    "nganhId": 1,
+    "ghiChu": "Đời 9 - Con Thứ"
+  },
+  {
+    "id": "doi10-dung",
+    "hoTen": "Cụ Dũng",
+    "doiThu": 10,
+    "viTri": "Con cả",
+    "chaId": "doi9-ke",
+    "conIds": ["doi11-dienhung", "doi11-conghuy"],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 10 - Con cả"
+  },
+  {
+    "id": "doi10-bang",
+    "hoTen": "Cụ Bảng",
+    "doiThu": 10,
+    "viTri": "Con thứ hai",
+    "chaId": "doi9-hoang",
+    "conIds": [],
+    "anhChiEmIds": ["doi10-thinhmy", "doi10-huynh"],
+    "nganhId": 1,
+    "ghiChu": "Đời 10 - Con thứ hai"
+  },
+  {
+    "id": "doi10-thinhmy",
+    "hoTen": "Cụ Thịnh Mỹ",
+    "doiThu": 10,
+    "viTri": "Con cả",
+    "chaId": "doi9-hoang",
+    "conIds": [],
+    "anhChiEmIds": ["doi10-bang", "doi10-huynh"],
+    "nganhId": 1,
+    "ghiChu": "Đời 10 - Con thứ"
+  },
+  {
+    "id": "doi10-huynh",
+    "hoTen": "Cụ Huỳnh",
+    "doiThu": 10,
+    "viTri": "Con thứ hai",
+    "chaId": "doi9-hoang",
+    "conIds": [],
+    "anhChiEmIds": ["doi10-bang", "doi10-thinhmy"],
+    "nganhId": 1,
+    "ghiChu": "Đời 10 - Con thứ hai"
+  },
+  {
+    "id": "doi11-dienhung",
+    "hoTen": "Đỗ Điện Hùng",
+    "doiThu": 11,
+    "viTri": "Con cả",
+    "chaId": "doi10-dung",
+    "conIds": ["doi12-dienthanghuyen"],
+    "anhChiEmIds": ["doi11-conghuy"],
+    "nganhId": 1,
+    "ghiChu": "Đời 11 - Con cả"
+  },
+  {
+    "id": "doi11-conghuy",
+    "hoTen": "Đỗ Cống Huy",
+    "doiThu": 11,
+    "viTri": "Con thứ 2",
+    "chaId": "doi10-dung",
+    "conIds": ["doi12-thinhcat"],
+    "anhChiEmIds": ["doi11-dienhung"],
+    "nganhId": 1,
+    "ghiChu": "Đời 11 - Con thứ 2 - Cụ Tế CN"
+  },
+  {
+    "id": "doi11-thuc",
+    "hoTen": "Đỗ Thức",
+    "doiThu": 11,
+    "viTri": "Con thứ 3",
+    "chaId": "doi10-dung",
+    "conIds": ["doi12-dongson"],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 11 - Con thứ 3"
+  },
+  {
+    "id": "doi11-thayboi",
+    "hoTen": "Thầy Bói",
+    "doiThu": 11,
+    "viTri": "9 Tứ",
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 11 - 9 Tứ"
+  },
+  {
+    "id": "doi11-kytai",
+    "hoTen": "Đỗ Kỳ Tài",
+    "doiThu": 11,
+    "viTri": "9 Tứ",
+    "conIds": ["doi12-nguyen", "doi12-bat"],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 11 - 9 Tứ"
+  },
+  {
+    "id": "doi11-diengiao",
+    "hoTen": "Đỗ Điền Giáo",
+    "doiThu": 11,
+    "viTri": "9 Tứ",
+    "conIds": ["doi12-ham"],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 11 - 9 Tứ"
+  },
+  {
+    "id": "doi11-luat",
+    "hoTen": "Đỗ Luật",
+    "doiThu": 11,
+    "conIds": ["doi12-tuoc"],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 11"
+  },
+  {
+    "id": "doi12-dienthanghuyen",
+    "hoTen": "Đỗ Điền Thăng Huyên",
+    "doiThu": 12,
+    "viTri": "Con cả",
+    "chaId": "doi11-dienhung",
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 12 - Cụ Tế CN 6"
+  },
+  {
+    "id": "doi12-thinhcat",
+    "hoTen": "Đỗ Thịnh Cát",
+    "doiThu": 12,
+    "chaId": "doi11-conghuy",
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 12"
+  },
+  {
+    "id": "doi12-dongson",
+    "hoTen": "Đỗ Đông Sơn",
+    "doiThu": 12,
+    "chaId": "doi11-thuc",
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 12"
+  },
+  {
+    "id": "doi12-nguyen",
+    "hoTen": "Đỗ Nguyên",
+    "doiThu": 12,
+    "chaId": "doi11-kytai",
+    "conIds": [],
+    "anhChiEmIds": ["doi12-bat"],
+    "nganhId": 1,
+    "ghiChu": "Đời 12"
+  },
+  {
+    "id": "doi12-bat",
+    "hoTen": "Đỗ Bật",
+    "doiThu": 12,
+    "chaId": "doi11-kytai",
+    "conIds": [],
+    "anhChiEmIds": ["doi12-nguyen"],
+    "nganhId": 1,
+    "ghiChu": "Đời 12"
+  },
+  {
+    "id": "doi12-ham",
+    "hoTen": "Đỗ Hàm",
+    "doiThu": 12,
+    "chaId": "doi11-diengiao",
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 12"
+  },
+  {
+    "id": "doi12-tuoc",
+    "hoTen": "Đỗ Tước",
+    "doiThu": 12,
+    "chaId": "doi11-luat",
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 12 - Sách Hoàn Đan"
+  },
+  {
+    "id": "doi13-huyenham",
+    "hoTen": "Đỗ Huyện Hàm",
+    "doiThu": 13,
+    "chaId": "doi12-dienthanghuyen",
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 13"
+  },
+  {
+    "id": "doi13-tongcat",
+    "hoTen": "Đỗ Tổng Cát",
+    "doiThu": 13,
+    "conIds": [],
+    "anhChiEmIds": [],
+    "nganhId": 1,
+    "ghiChu": "Đời 13"
+  }
+]
