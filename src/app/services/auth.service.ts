@@ -1,11 +1,16 @@
 import { Injectable, inject } from '@angular/core';
-import { Auth, authState, signInWithPopup, GoogleAuthProvider, signOut, User } from '@angular/fire/auth';
+import {
+  Auth,
+  authState,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  GoogleAuthProvider,
+  signOut,
+  User,
+} from '@angular/fire/auth';
 import { Observable, map } from 'rxjs';
-
-const ALLOWED_EMAILS: string[] = [
-  'lethieuanh154@gmail.com','lethieuanhdn@gmail.com'
-  // Thêm email được phép đăng nhập vào đây
-];
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -18,14 +23,46 @@ export class AuthService {
     return this.auth.currentUser;
   }
 
+  constructor() {
+    // Xử lý redirect result khi quay lại từ Google Sign-In (mobile)
+    this.handleRedirectResult();
+  }
+
+  private async handleRedirectResult(): Promise<void> {
+    try {
+      const result = await getRedirectResult(this.auth);
+      if (result) {
+        const email = result.user.email?.toLowerCase() || '';
+        if (!environment.allowedEmails.includes(email)) {
+          await signOut(this.auth);
+          alert(`Email "${email}" không được phép đăng nhập.`);
+        }
+      }
+    } catch (e: any) {
+      console.error('[GP-DEBUG] handleRedirectResult error:', e);
+    }
+  }
+
+  private isMobile(): boolean {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   async signInWithGoogle(): Promise<void> {
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(this.auth, provider);
-    const email = result.user.email?.toLowerCase() || '';
 
-    if (!ALLOWED_EMAILS.includes(email)) {
-      await signOut(this.auth);
-      throw new Error(`Email "${email}" không được phép đăng nhập.`);
+    if (this.isMobile()) {
+      // Mobile: dùng redirect thay vì popup (popup bị chặn trên mobile)
+      await signInWithRedirect(this.auth, provider);
+      // Trang sẽ redirect, kết quả xử lý trong handleRedirectResult()
+    } else {
+      // Desktop: dùng popup
+      const result = await signInWithPopup(this.auth, provider);
+      const email = result.user.email?.toLowerCase() || '';
+
+      if (!environment.allowedEmails.includes(email)) {
+        await signOut(this.auth);
+        throw new Error(`Email "${email}" không được phép đăng nhập.`);
+      }
     }
   }
 

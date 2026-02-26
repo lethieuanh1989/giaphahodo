@@ -13,11 +13,11 @@ import { StorageService } from '../../services/storage.service';
     <div class="person-detail" *ngIf="person">
       <!-- Photo -->
       <div class="photo-section">
-        <div class="photo-frame" (click)="canEdit && fileInput.click()">
+        <div class="photo-frame" (click)="canEditContact && fileInput.click()">
           <img *ngIf="person.hinhAnh" [src]="person.hinhAnh" alt="Ảnh" />
           <div *ngIf="!person.hinhAnh" class="photo-placeholder">
             <span class="icon">📷</span>
-            <span>{{ canEdit ? 'Thêm ảnh' : '' }}</span>
+            <span>{{ canEditContact ? 'Thêm ảnh' : '' }}</span>
           </div>
           <div class="uploading-overlay" *ngIf="uploading">
             <span>Đang tải...</span>
@@ -625,8 +625,9 @@ export class PersonDetailComponent implements OnInit, OnChanges {
 
     this.uploading = true;
     try {
-      const url = await this.storageService.uploadImage(this.person.id, file);
-      this.person.hinhAnh = url;
+      const base64 = await this.compressImage(file, 600, 0.7);
+      console.log(`[GP-DEBUG] Avatar image size: ${Math.round(base64.length / 1024)}KB`);
+      this.person.hinhAnh = base64;
       await this.familyService.savePerson(this.person);
       this.personSaved.emit(this.person);
     } catch {

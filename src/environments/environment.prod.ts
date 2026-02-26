@@ -9,4 +9,9 @@ export const environment = {
     appId: "1:200363966715:web:c26e7f0294af948b4db05e",
     measurementId: "G-170G1FWEMX"
   },
+  allowedEmails: [
+    // Thêm email được phép đăng nhập vào đây
+    "lethieuanhdn@gmail.com",
+    "lethieuanh154@gmail.com"
+  ],
 };
