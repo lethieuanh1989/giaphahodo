@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Person } from '../../models/person.model';
 import { FamilyService } from '../../services/family.service';
-import { StorageService } from '../../services/storage.service';
+
 
 @Component({
   selector: 'app-person-detail',
@@ -617,7 +617,6 @@ export class PersonDetailComponent implements OnInit, OnChanges {
 
   constructor(
     private familyService: FamilyService,
-    private storageService: StorageService,
   ) {}
 
   ngOnInit(): void {
@@ -811,10 +810,12 @@ export class PersonDetailComponent implements OnInit, OnChanges {
     if (!ok) return;
 
     try {
-      await this.storageService.deleteImage(this.person.id);
+      console.log(`[GP-DEBUG] confirmDelete('${this.person.id}') START`);
       await this.familyService.deletePerson(this.person.id);
+      console.log(`[GP-DEBUG] confirmDelete: firestore OK, emitting personDeleted`);
       this.personDeleted.emit();
     } catch (e: any) {
+      console.error('[GP-DEBUG] confirmDelete ERROR:', e);
       alert(e.message || 'Lỗi khi xóa');
     }
   }
