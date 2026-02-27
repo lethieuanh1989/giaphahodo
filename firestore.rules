@@ -3,7 +3,17 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /branches/{branchKey}/people/{personId} {
       allow read: if true;
+
+      // Admin (đăng nhập): toàn quyền ghi
       allow write: if request.auth != null;
+
+      // Không đăng nhập: chỉ cho phép update các field liên hệ, check-in, avatar
+      allow update: if request.auth == null
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['diaChiHienTai', 'soDienThoai', 'facebook', 'zalo', 'khac',
+                       'checkInImages', 'checkInDates',
+                       'checkInImage', 'checkInDate',
+                       'hinhAnh', 'updatedAt']);
     }
   }
 }

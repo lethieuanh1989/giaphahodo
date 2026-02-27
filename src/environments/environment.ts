@@ -12,6 +12,7 @@ export const environment = {
    allowedEmails: [
     // Thêm email được phép đăng nhập vào đây
     "lethieuanhdn@gmail.com",
-    "lethieuanh154@gmail.com"
+    "lethieuanh154@gmail.com",
+    "Dophuchoang472002@gmail.com"
   ],
 };

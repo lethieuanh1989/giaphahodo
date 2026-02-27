@@ -26,7 +26,6 @@ import { StorageService } from '../../services/storage.service';
             #fileInput
             type="file"
             accept="image/*"
-            capture="environment"
             (change)="onImageSelected($event)"
             hidden
           />
@@ -226,22 +225,25 @@ import { StorageService } from '../../services/storage.service';
 
       <!-- Check-in -->
       <div class="info-card">
-        <h3>Check-in</h3>
+        <h3>Check-in <span class="checkin-count" *ngIf="person.checkInImages?.length">{{ person.checkInImages!.length }}/5</span></h3>
 
-        <div class="checkin-content" *ngIf="person.checkInImage">
-          <div class="checkin-thumb" (click)="zoomedImage = person.checkInImage!">
-            <img [src]="person.checkInImage" alt="Check-in" />
-          </div>
-          <div class="checkin-date" *ngIf="person.checkInDate">
-            {{ person.checkInDate }}
+        <div class="checkin-gallery" *ngIf="person.checkInImages?.length">
+          <div class="checkin-item" *ngFor="let img of person.checkInImages; let i = index">
+            <div class="checkin-thumb" (click)="zoomedImage = img">
+              <img [src]="img" alt="Check-in" />
+            </div>
+            <div class="checkin-date" *ngIf="person.checkInDates?.[i]">
+              {{ person.checkInDates![i] }}
+            </div>
+            <button class="btn-checkin-delete" *ngIf="canEditContact" (click)="deleteCheckInImage(i)">Xóa</button>
           </div>
         </div>
 
-        <div class="checkin-empty" *ngIf="!person.checkInImage">
+        <div class="checkin-empty" *ngIf="!person.checkInImages?.length">
           <span>Chưa check-in</span>
         </div>
 
-        <div class="checkin-actions" *ngIf="canEditContact">
+        <div class="checkin-actions" *ngIf="canEditContact && (person.checkInImages?.length || 0) < 5">
           <button class="btn-checkin" (click)="checkInInput.click()" [disabled]="checkingIn">
             {{ checkingIn ? 'Đang xử lý...' : 'Check-in' }}
           </button>
@@ -249,7 +251,6 @@ import { StorageService } from '../../services/storage.service';
             #checkInInput
             type="file"
             accept="image/*"
-            capture="environment"
             (change)="onCheckIn($event)"
             hidden
           />
@@ -463,12 +464,25 @@ import { StorageService } from '../../services/storage.service';
       width: 100%;
       margin-top: 8px;
     }
-    .checkin-content {
+    .checkin-count {
+      font-size: 13px;
+      color: #888;
+      font-weight: 400;
+    }
+    .checkin-gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .checkin-item {
       text-align: center;
+      width: 120px;
     }
     .checkin-thumb {
       display: inline-block;
-      max-width: 200px;
+      width: 120px;
+      height: 120px;
       border-radius: 12px;
       overflow: hidden;
       cursor: pointer;
@@ -476,12 +490,24 @@ import { StorageService } from '../../services/storage.service';
     }
     .checkin-thumb img {
       width: 100%;
+      height: 100%;
+      object-fit: cover;
       display: block;
     }
     .checkin-date {
-      font-size: 13px;
+      font-size: 11px;
       color: #888;
-      margin-top: 6px;
+      margin-top: 4px;
+    }
+    .btn-checkin-delete {
+      margin-top: 4px;
+      padding: 2px 10px;
+      border-radius: 6px;
+      border: 1px solid #c62828;
+      background: #fff;
+      color: #c62828;
+      font-size: 11px;
+      cursor: pointer;
     }
     .checkin-empty {
       text-align: center;
@@ -560,7 +586,7 @@ import { StorageService } from '../../services/storage.service';
 })
 export class PersonDetailComponent implements OnInit, OnChanges {
   @Input() person!: Person;
-  @Input() canEdit = true; // TẠM THỜI: cho phép tất cả chỉnh sửa
+  @Input() canEdit = false;
   @Input() homePersonId?: string;
   @Output() navigateTo = new EventEmitter<string>();
   @Output() personSaved = new EventEmitter<Person>();
@@ -595,15 +621,29 @@ export class PersonDetailComponent implements OnInit, OnChanges {
   ) {}
 
   ngOnInit(): void {
+    this.migrateCheckIn();
     this.loadRelations();
   }
 
   ngOnChanges(): void {
+    this.migrateCheckIn();
     this.loadRelations();
     this.editing = false;
     this.editingContact = false;
     this.showAddChild = false;
     this.zoomedImage = null;
+  }
+
+  /** Migrate dữ liệu cũ checkInImage → checkInImages */
+  private migrateCheckIn(): void {
+    if (!this.person) return;
+    const p = this.person as any;
+    if (p.checkInImage && !this.person.checkInImages?.length) {
+      this.person.checkInImages = [p.checkInImage];
+      this.person.checkInDates = p.checkInDate ? [p.checkInDate] : [];
+      delete p.checkInImage;
+      delete p.checkInDate;
+    }
   }
 
   loadRelations(): void {
@@ -630,8 +670,9 @@ export class PersonDetailComponent implements OnInit, OnChanges {
       this.person.hinhAnh = base64;
       await this.familyService.savePerson(this.person);
       this.personSaved.emit(this.person);
-    } catch {
-      alert('Lỗi khi tải ảnh lên. Vui lòng thử lại.');
+    } catch (e: any) {
+      console.error('[GP-DEBUG] Avatar save error:', e);
+      alert(e.message || 'Lỗi khi tải ảnh lên. Vui lòng thử lại.');
     } finally {
       this.uploading = false;
       input.value = '';
@@ -694,12 +735,19 @@ export class PersonDetailComponent implements OnInit, OnChanges {
     if (!input.files?.length) return;
     const file = input.files[0];
 
+    if ((this.person.checkInImages?.length || 0) >= 5) {
+      alert('Tối đa 5 ảnh check-in.');
+      input.value = '';
+      return;
+    }
+
     this.checkingIn = true;
     try {
       const base64 = await this.compressImage(file, 800, 0.6);
-      console.log(`[GP-DEBUG] Check-in image size: ${Math.round(base64.length / 1024)}KB`);
-      this.person.checkInImage = base64;
-      this.person.checkInDate = new Date().toLocaleDateString('vi-VN');
+      if (!this.person.checkInImages) this.person.checkInImages = [];
+      if (!this.person.checkInDates) this.person.checkInDates = [];
+      this.person.checkInImages.push(base64);
+      this.person.checkInDates.push(new Date().toLocaleDateString('vi-VN'));
       await this.familyService.savePerson(this.person);
       this.personSaved.emit(this.person);
     } catch (e: any) {
@@ -707,6 +755,18 @@ export class PersonDetailComponent implements OnInit, OnChanges {
     } finally {
       this.checkingIn = false;
       input.value = '';
+    }
+  }
+
+  async deleteCheckInImage(index: number): Promise<void> {
+    if (!confirm('Xóa ảnh check-in này?')) return;
+    this.person.checkInImages?.splice(index, 1);
+    this.person.checkInDates?.splice(index, 1);
+    try {
+      await this.familyService.savePerson(this.person);
+      this.personSaved.emit(this.person);
+    } catch (e: any) {
+      alert(e.message || 'Lỗi khi xóa ảnh.');
     }
   }
 

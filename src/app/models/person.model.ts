@@ -20,8 +20,8 @@ export interface Person {
   anhChiEmIds: string[]; // danh sách ID anh chị em
   nganhId?: number; // Ngành (branch) in family tree
   ghiChu?: string;
-  checkInImage?: string; // ảnh check-in dạng base64 (đã nén)
-  checkInDate?: string; // ngày check-in
+  checkInImages?: string[]; // danh sách ảnh check-in base64 (tối đa 5)
+  checkInDates?: string[]; // ngày check-in tương ứng
   createdAt?: string;
   updatedAt?: string;
 }

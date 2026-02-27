@@ -11,6 +11,7 @@ import {
   writeBatch,
   query,
   limit,
+  deleteField,
 } from '@angular/fire/firestore';
 import { Observable, map } from 'rxjs';
 import { Person } from '../models/person.model';
@@ -36,10 +37,14 @@ export class FirebaseService {
 
   async savePerson(branchKey: string, person: Person): Promise<void> {
     const docRef = doc(this.firestore, 'branches', branchKey, 'people', person.id);
-    await setDoc(docRef, {
+    const data: any = {
       ...person,
       updatedAt: new Date().toISOString(),
-    }, { merge: true });
+      // Xóa field cũ (đã migrate sang checkInImages)
+      checkInImage: deleteField(),
+      checkInDate: deleteField(),
+    };
+    await setDoc(docRef, data, { merge: true });
   }
 
   async addPerson(branchKey: string, person: Person): Promise<void> {
