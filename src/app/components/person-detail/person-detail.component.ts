@@ -46,7 +46,6 @@ import { FamilyService } from '../../services/family.service';
         </button>
         <button class="btn-save" *ngIf="editing" (click)="save()">Lưu</button>
         <button class="btn-add" (click)="showAddChild = !showAddChild">Thêm con</button>
-        <button class="btn-delete" (click)="confirmDelete()">Xóa</button>
       </div>
       <div class="login-hint" *ngIf="!canEdit">
         <span>Đăng nhập để chỉnh sửa</span>

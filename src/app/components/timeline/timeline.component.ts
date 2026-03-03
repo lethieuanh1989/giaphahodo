@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
+import { FirebaseService } from '../../services/firebase.service';
 
 interface TimelineEvent {
   id: string;
@@ -41,7 +43,7 @@ interface TimelineEvent {
           <textarea
             class="note-input"
             [(ngModel)]="event.note"
-            (blur)="saveEvents()"
+            (blur)="saveEvent(event)"
             placeholder="Ghi chú..."
             rows="2"
           ></textarea>
@@ -225,25 +227,27 @@ interface TimelineEvent {
     }
   `]
 })
-export class TimelineComponent implements OnInit {
+export class TimelineComponent implements OnInit, OnDestroy {
+  private firebaseService = inject(FirebaseService);
+  private sub?: Subscription;
+
   events: TimelineEvent[] = [];
   expandedIndex = -1;
-  private fileInputs: HTMLInputElement[] = [];
-  private readonly STORAGE_KEY = 'timeline-events';
 
   ngOnInit(): void {
-    this.loadEvents();
+    this.sub = this.firebaseService.getTimelineEvents().subscribe(docs => {
+      this.events = (docs as TimelineEvent[]).sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+    });
   }
 
-  loadEvents(): void {
-    const data = localStorage.getItem(this.STORAGE_KEY);
-    if (data) {
-      this.events = JSON.parse(data);
-    }
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
   }
 
-  saveEvents(): void {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.events));
+  saveEvent(event: TimelineEvent): void {
+    this.firebaseService.saveTimelineEvent(event as any);
   }
 
   addEvent(): void {
@@ -255,14 +259,15 @@ export class TimelineComponent implements OnInit {
     };
     this.events.push(event);
     this.expandedIndex = this.events.length - 1;
-    this.saveEvents();
+    this.firebaseService.saveTimelineEvent(event as any);
   }
 
   removeEvent(index: number, e: Event): void {
     e.stopPropagation();
+    const event = this.events[index];
     this.events.splice(index, 1);
     this.expandedIndex = -1;
-    this.saveEvents();
+    this.firebaseService.deleteTimelineEvent(event.id);
   }
 
   toggleExpand(index: number): void {
@@ -281,10 +286,26 @@ export class TimelineComponent implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
 
+    // Nén ảnh trước khi lưu Firestore (800px, 60% quality)
     const reader = new FileReader();
     reader.onload = () => {
-      this.events[index].imageBase64 = reader.result as string;
-      this.saveEvents();
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxSize = 800;
+        let w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.6);
+        this.events[index].imageBase64 = compressed;
+        this.saveEvent(this.events[index]);
+      };
+      img.src = reader.result as string;
     };
     reader.readAsDataURL(file);
     input.value = '';

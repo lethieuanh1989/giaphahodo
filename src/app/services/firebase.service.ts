@@ -124,6 +124,39 @@ export class FirebaseService {
     return snapshot.exists() ? (snapshot.data() as Record<string, any>) : null;
   }
 
+  // --- Chat messages ---
+
+  getChatMessages(): Observable<Record<string, any>[]> {
+    const col = collection(this.firestore, 'chat-messages');
+    return collectionData(col, { idField: 'id' }).pipe(
+      map(docs => docs as Record<string, any>[])
+    );
+  }
+
+  async sendChatMessage(message: Record<string, any>): Promise<void> {
+    const docRef = doc(this.firestore, 'chat-messages', message['id']);
+    await setDoc(docRef, message);
+  }
+
+  // --- Timeline events ---
+
+  getTimelineEvents(): Observable<Record<string, any>[]> {
+    const col = collection(this.firestore, 'timeline-events');
+    return collectionData(col, { idField: 'id' }).pipe(
+      map(docs => docs as Record<string, any>[])
+    );
+  }
+
+  async saveTimelineEvent(event: Record<string, any>): Promise<void> {
+    const docRef = doc(this.firestore, 'timeline-events', event['id']);
+    await setDoc(docRef, { ...event, updatedAt: new Date().toISOString() }, { merge: true });
+  }
+
+  async deleteTimelineEvent(eventId: string): Promise<void> {
+    const docRef = doc(this.firestore, 'timeline-events', eventId);
+    await deleteDoc(docRef);
+  }
+
   private stripUndefined(obj: Record<string, any>): Record<string, any> {
     const result: Record<string, any> = {};
     for (const [key, value] of Object.entries(obj)) {

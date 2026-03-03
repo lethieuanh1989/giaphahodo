@@ -1,0 +1,55 @@
+<!-- Chat Bubble Button -->
+<button class="chat-bubble" (click)="toggleChat()" [class.open]="isOpen">
+  <span class="bubble-icon" *ngIf="!isOpen">💬</span>
+  <span class="bubble-icon close-icon" *ngIf="isOpen">✕</span>
+  <span class="unread-badge" *ngIf="unreadCount > 0 && !isOpen">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+</button>
+
+<!-- Chat Popup -->
+<div class="chat-popup" *ngIf="isOpen">
+  <!-- Header -->
+  <div class="chat-header">
+    <h3>Chat Gia Đình</h3>
+    <span class="online-dot"></span>
+  </div>
+
+  <!-- Messages -->
+  <div class="chat-messages" #messagesContainer>
+    <div class="empty-chat" *ngIf="messages.length === 0">
+      <span class="empty-icon">💬</span>
+      <p>Chưa có tin nhắn nào</p>
+      <p class="empty-sub">Hãy bắt đầu cuộc trò chuyện!</p>
+    </div>
+
+    <ng-container *ngFor="let msg of messages; let i = index">
+      <!-- Date separator -->
+      <div class="date-separator" *ngIf="shouldShowDate(i)">
+        <span>{{ formatDate(msg.createdAt) }}</span>
+      </div>
+
+      <!-- Message -->
+      <div class="message-row" [class.own]="isOwnMessage(msg)">
+        <div class="message-bubble" [class.own]="isOwnMessage(msg)">
+          <div class="sender-name" *ngIf="shouldShowName(i)">{{ msg.senderName }}</div>
+          <div class="message-text">{{ msg.text }}</div>
+          <div class="message-time">{{ formatTime(msg.createdAt) }}</div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Input -->
+  <div class="chat-input-area">
+    <input
+      type="text"
+      class="chat-input"
+      [(ngModel)]="newMessage"
+      (keydown)="onKeydown($event)"
+      placeholder="Nhập tin nhắn..."
+      #messageInput
+    />
+    <button class="send-btn" (click)="sendMessage()" [disabled]="!newMessage.trim()">
+      ➤
+    </button>
+  </div>
+</div>

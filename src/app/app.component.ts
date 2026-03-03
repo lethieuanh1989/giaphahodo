@@ -7,6 +7,7 @@ import { PersonDetailComponent } from './components/person-detail/person-detail.
 import { FamilyTreeComponent } from './components/family-tree/family-tree.component';
 import { SearchComponent } from './components/search/search.component';
 import { TimelineComponent } from './components/timeline/timeline.component';
+import { ChatComponent } from './components/chat/chat.component';
 import { FamilyService } from './services/family.service';
 import { AuthService } from './services/auth.service';
 import { Person } from './models/person.model';
@@ -25,11 +26,26 @@ type View = 'login' | 'register' | 'detail' | 'tree' | 'generations' | 'search' 
     FamilyTreeComponent,
     SearchComponent,
     TimelineComponent,
+    ChatComponent,
   ],
   template: `
+    <!-- Auto-login loading -->
+    <div class="loading-overlay" *ngIf="autoLoading">
+      <div class="loading-card">
+        <div class="loading-header">
+          <h2>Gia Phả Họ Đỗ</h2>
+          <p>Xuân Thượng</p>
+        </div>
+        <div class="loading-body">
+          <div class="spinner"></div>
+          <p>Đang đăng nhập...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Login -->
     <app-login
-      *ngIf="currentView === 'login'"
+      *ngIf="currentView === 'login' && !autoLoading"
       (loginSuccess)="onLoginAttempt($event)"
       (goToRegister)="currentView = 'register'"
     ></app-login>
@@ -102,6 +118,13 @@ type View = 'login' | 'register' | 'detail' | 'tree' | 'generations' | 'search' 
       </div>
     </div>
 
+    <!-- Chat Bubble -->
+    <app-chat
+      *ngIf="isMainView()"
+      [currentUid]="currentUserUid"
+      [currentUserName]="currentUserName"
+    ></app-chat>
+
     <!-- Bottom Navigation -->
     <nav class="bottom-nav" *ngIf="isMainView()">
       <button
@@ -151,6 +174,65 @@ type View = 'login' | 'register' | 'detail' | 'tree' | 'generations' | 'search' 
       display: block;
       min-height: 100vh;
       background: #f5f0eb;
+    }
+
+    /* Auto-login loading */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .loading-card {
+      background: #fff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 380px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .loading-header {
+      background: linear-gradient(135deg, #8B0000, #CD853F);
+      color: #fff;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .loading-header h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .loading-header p {
+      margin: 4px 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .loading-body {
+      padding: 32px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .loading-body p {
+      margin: 0;
+      font-size: 15px;
+      color: #666;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #eee;
+      border-top-color: #8B0000;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
     .top-bar {
       position: sticky;
@@ -311,6 +393,9 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // Auth
   isLoggedIn = false;
+  autoLoading = false;
+  currentUserUid = '';
+  currentUserName = '';
   private authSub?: Subscription;
   private dataSub?: Subscription;
 
@@ -334,6 +419,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isLoggedIn = !!user;
       if (user && this.currentView === 'login') {
         // Auto-login: user đã đăng nhập trước đó
+        this.currentUserUid = user.uid;
+        this.autoLoading = true;
         await this.loadUserAndNavigate(user.uid);
       }
       if (!user && this.isMainView()) {
@@ -342,6 +429,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.homePerson = undefined;
         this.currentPerson = undefined;
         this.historyStack = [];
+        this.currentUserUid = '';
+        this.currentUserName = '';
       }
     });
 
@@ -381,6 +470,8 @@ export class AppComponent implements OnInit, OnDestroy {
     const [phone, password] = data.split('|||');
     try {
       const userData = await this.authService.signInWithPhone(phone, password);
+      this.currentUserUid = this.authService.currentUser?.uid || '';
+      this.currentUserName = userData.hoTen || '';
       const person = this.familyService.getPersonById(userData.personId);
       if (person) {
         this.homePerson = person;
@@ -477,6 +568,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const userData = await this.authService.getUserData(uid);
       if (userData?.personId) {
+        this.currentUserName = userData.hoTen || '';
         // Chờ data load xong (có thể Firestore chưa emit)
         const tryLoad = () => {
           const person = this.familyService.getPersonById(userData.personId);
@@ -495,13 +587,15 @@ export class AppComponent implements OnInit, OnDestroy {
             if (!tryLoad()) {
               this.currentView = 'generations';
             }
+            this.autoLoading = false;
           }, 2000);
+          return; // autoLoading sẽ được clear trong setTimeout
         }
       }
     } catch {
       // Không có user data → có thể là admin Google login
-      // Giữ nguyên ở login hoặc cho vào generations
     }
+    this.autoLoading = false;
   }
 
   // --- Logout ---
@@ -511,6 +605,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.homePerson = undefined;
     this.currentPerson = undefined;
     this.historyStack = [];
+    this.currentUserUid = '';
+    this.currentUserName = '';
     this.currentView = 'login';
   }
 
