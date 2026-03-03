@@ -6,6 +6,7 @@ import {
   doc,
   setDoc,
   getDocs,
+  getDoc,
   deleteDoc,
   updateDoc,
   writeBatch,
@@ -108,6 +109,19 @@ export class FirebaseService {
     console.log(`[GP-DEBUG] FirebaseService.batchWritePersons('${branchKey}') committing ${operations.length} ops:`, operations.map(op => `${op.type}:${op.person.id}`));
     await batch.commit();
     console.log(`[GP-DEBUG] FirebaseService.batchWritePersons('${branchKey}') committed OK`);
+  }
+
+  // --- User accounts ---
+
+  async saveUserData(uid: string, data: Record<string, any>): Promise<void> {
+    const docRef = doc(this.firestore, 'users', uid);
+    await setDoc(docRef, { ...data, updatedAt: new Date().toISOString() }, { merge: true });
+  }
+
+  async getUserData(uid: string): Promise<Record<string, any> | null> {
+    const docRef = doc(this.firestore, 'users', uid);
+    const snapshot = await getDoc(docRef);
+    return snapshot.exists() ? (snapshot.data() as Record<string, any>) : null;
   }
 
   private stripUndefined(obj: Record<string, any>): Record<string, any> {

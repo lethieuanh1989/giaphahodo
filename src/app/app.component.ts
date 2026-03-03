@@ -1,7 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { NamePopupComponent } from './components/name-popup/name-popup.component';
+import { LoginComponent } from './components/login/login.component';
+import { RegisterComponent } from './components/register/register.component';
 import { PersonDetailComponent } from './components/person-detail/person-detail.component';
 import { FamilyTreeComponent } from './components/family-tree/family-tree.component';
 import { SearchComponent } from './components/search/search.component';
@@ -11,52 +12,51 @@ import { AuthService } from './services/auth.service';
 import { Person } from './models/person.model';
 import { BranchInfo, BranchKey } from './services/seed-data';
 
-type View = 'popup' | 'detail' | 'tree' | 'generations' | 'search' | 'timeline';
+type View = 'login' | 'register' | 'detail' | 'tree' | 'generations' | 'search' | 'timeline';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
-    NamePopupComponent,
+    LoginComponent,
+    RegisterComponent,
     PersonDetailComponent,
     FamilyTreeComponent,
     SearchComponent,
     TimelineComponent,
   ],
   template: `
-    <!-- Name Popup -->
-    <app-name-popup
-      *ngIf="currentView === 'popup'"
-      [errorMessage]="nameError"
-      (nameSubmitted)="onNameSubmitted($event)"
-      (browseAllClicked)="onBrowseAll()"
-    ></app-name-popup>
+    <!-- Login -->
+    <app-login
+      *ngIf="currentView === 'login'"
+      (loginSuccess)="onLoginAttempt($event)"
+      (goToRegister)="currentView = 'register'"
+    ></app-login>
+
+    <!-- Register -->
+    <app-register
+      *ngIf="currentView === 'register'"
+      (doRegister)="onRegisterAttempt($event)"
+      (registerSuccess)="onRegisterSuccess()"
+      (goToLogin)="currentView = 'login'"
+    ></app-register>
 
     <!-- Top bar -->
-    <header class="top-bar" *ngIf="currentView !== 'popup'">
+    <header class="top-bar" *ngIf="isMainView()">
       <button class="back-btn" *ngIf="historyStack.length > 0" (click)="goBack()">
         ‹
       </button>
       <h1 class="top-title">{{ getTitle() }}</h1>
 
       <!-- Auth area -->
-      <div class="auth-area" *ngIf="!isLoggedIn">
-        <button class="auth-btn login" (click)="login()">Đăng nhập</button>
-      </div>
-      <div class="auth-area" *ngIf="isLoggedIn">
-        <img
-          *ngIf="userPhotoURL"
-          [src]="userPhotoURL"
-          class="user-avatar"
-          [title]="userName"
-        />
+      <div class="auth-area">
         <button class="auth-btn logout" (click)="logout()">Thoát</button>
       </div>
     </header>
 
     <!-- Main Content -->
-    <main class="content" *ngIf="currentView !== 'popup'">
+    <main class="content" *ngIf="isMainView()">
       <app-person-detail
         *ngIf="currentView === 'detail' && currentPerson"
         [person]="currentPerson"
@@ -103,7 +103,7 @@ type View = 'popup' | 'detail' | 'tree' | 'generations' | 'search' | 'timeline';
     </div>
 
     <!-- Bottom Navigation -->
-    <nav class="bottom-nav" *ngIf="currentView !== 'popup'">
+    <nav class="bottom-nav" *ngIf="isMainView()">
       <button
         class="nav-btn"
         [class.active]="currentView === 'detail'"
@@ -190,12 +190,6 @@ type View = 'popup' | 'detail' | 'tree' | 'generations' | 'search' | 'timeline';
       display: flex;
       align-items: center;
       gap: 6px;
-    }
-    .user-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(255,255,255,0.5);
     }
     .auth-btn {
       padding: 4px 10px;
@@ -307,15 +301,16 @@ type View = 'popup' | 'detail' | 'tree' | 'generations' | 'search' | 'timeline';
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
-  currentView: View = 'popup';
+  currentView: View = 'login';
   currentPerson?: Person;
   historyStack: { view: View; personId?: string }[] = [];
   homePerson?: Person;
 
+  @ViewChild(LoginComponent) loginComp?: LoginComponent;
+  @ViewChild(RegisterComponent) registerComp?: RegisterComponent;
+
   // Auth
   isLoggedIn = false;
-  userName = '';
-  userPhotoURL = '';
   private authSub?: Subscription;
   private dataSub?: Subscription;
 
@@ -324,8 +319,6 @@ export class AppComponent implements OnInit, OnDestroy {
   currentBranchKey: BranchKey;
   currentBranchLabel: string;
   showBranchDropdown = false;
-
-  nameError = '';
 
   constructor(
     private familyService: FamilyService,
@@ -337,38 +330,39 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.authSub = this.authService.currentUser$.subscribe(user => {
+    this.authSub = this.authService.currentUser$.subscribe(async user => {
       this.isLoggedIn = !!user;
-      this.userName = user?.displayName || '';
-      this.userPhotoURL = user?.photoURL || '';
+      if (user && this.currentView === 'login') {
+        // Auto-login: user đã đăng nhập trước đó
+        await this.loadUserAndNavigate(user.uid);
+      }
+      if (!user && this.isMainView()) {
+        // User đã logout → quay lại login
+        this.currentView = 'login';
+        this.homePerson = undefined;
+        this.currentPerson = undefined;
+        this.historyStack = [];
+      }
     });
 
     // Auto-refresh currentPerson khi Firestore data thay đổi
-    this.dataSub = this.familyService.getAllPeopleObservable().subscribe((allPeople) => {
-      console.log(`[GP-DEBUG] AppComponent dataSub: ${allPeople.length} people, view='${this.currentView}', person='${this.currentPerson?.id || 'none'}'`);
+    this.dataSub = this.familyService.getAllPeopleObservable().subscribe(() => {
       if (this.currentPerson && this.currentView === 'detail') {
         const updated = this.familyService.getPersonById(this.currentPerson.id);
         if (updated) {
           const oldJson = JSON.stringify(this.currentPerson);
           const newJson = JSON.stringify(updated);
           if (oldJson !== newJson) {
-            console.log(`[GP-DEBUG] AppComponent: currentPerson REFRESHED '${updated.id}'`);
             this.currentPerson = { ...updated };
           }
-        } else {
-          console.warn(`[GP-DEBUG] AppComponent: currentPerson '${this.currentPerson.id}' NOT FOUND after data update!`);
         }
       }
     });
 
-    // Dọn duplicate documents từ bug trước (chạy 1 lần, delay để subscriptions load xong)
+    // Dọn duplicate documents từ bug trước
     setTimeout(async () => {
       await this.familyService.cleanupDuplicates();
-      // Xóa duplicate "Đỗ Anh Dũng" tạo ra do bug trước đó
-      const deleted = await this.familyService.cleanupDuplicatesByName('Đỗ Anh Dũng');
-      if (deleted > 0) {
-        console.log(`[GP-DEBUG] Đã xóa ${deleted} bản duplicate "Đỗ Anh Dũng"`);
-      }
+      await this.familyService.cleanupDuplicatesByName('Đỗ Anh Dũng');
     }, 5000);
   }
 
@@ -377,41 +371,150 @@ export class AppComponent implements OnInit, OnDestroy {
     this.dataSub?.unsubscribe();
   }
 
-  async login(): Promise<void> {
+  isMainView(): boolean {
+    return this.currentView !== 'login' && this.currentView !== 'register';
+  }
+
+  // --- Login ---
+
+  async onLoginAttempt(data: string): Promise<void> {
+    const [phone, password] = data.split('|||');
     try {
-      await this.authService.signInWithGoogle();
+      const userData = await this.authService.signInWithPhone(phone, password);
+      const person = this.familyService.getPersonById(userData.personId);
+      if (person) {
+        this.homePerson = person;
+        this.currentPerson = { ...person };
+        this.currentView = 'detail';
+      } else {
+        // Person chưa load xong, thử lại sau 2s
+        setTimeout(() => {
+          const p = this.familyService.getPersonById(userData.personId);
+          if (p) {
+            this.homePerson = p;
+            this.currentPerson = { ...p };
+            this.currentView = 'detail';
+          } else {
+            this.currentView = 'generations';
+          }
+          this.loginComp?.onLoginDone();
+        }, 2000);
+        return;
+      }
+      this.loginComp?.onLoginDone();
     } catch (e: any) {
-      alert(e.message || 'Đăng nhập thất bại');
+      let msg = 'Đăng nhập thất bại.';
+      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') {
+        msg = 'Số điện thoại hoặc mật khẩu không đúng.';
+      } else if (e.code === 'auth/wrong-password') {
+        msg = 'Mật khẩu không đúng.';
+      } else if (e.code === 'auth/too-many-requests') {
+        msg = 'Quá nhiều lần thử. Vui lòng thử lại sau.';
+      } else if (e.message) {
+        msg = e.message;
+      }
+      this.loginComp?.onLoginError(msg);
     }
   }
+
+  // --- Register ---
+
+  async onRegisterAttempt(data: { hoTen: string; phone: string; password: string }): Promise<void> {
+    // Verify tên có trong gia phả
+    const person = this.familyService.getPersonByName(data.hoTen);
+    if (!person) {
+      // Thử tìm gần đúng
+      const results = this.familyService.searchPeople(data.hoTen);
+      if (results.length === 0) {
+        this.registerComp?.onRegisterError('Bạn không có tên trong gia phả họ Đỗ - Xuân Thượng hoặc dữ liệu của bạn chưa được thêm vào gia phả.');
+        return;
+      }
+      if (results.length === 1) {
+        // Tìm đúng 1 kết quả gần đúng → dùng luôn
+        await this.doRegister(results[0], data.phone, data.password);
+        return;
+      }
+      // Nhiều kết quả → yêu cầu nhập chính xác
+      this.registerComp?.onRegisterError('Tìm thấy nhiều tên tương tự. Vui lòng nhập chính xác họ tên trong gia phả.');
+      return;
+    }
+
+    await this.doRegister(person, data.phone, data.password);
+  }
+
+  private async doRegister(person: Person, phone: string, password: string): Promise<void> {
+    try {
+      await this.authService.register(person.hoTen, phone, password, person.id);
+
+      // Cập nhật số điện thoại vào person (user vẫn còn authenticated)
+      const updatedPerson = { ...person, soDienThoai: phone };
+      await this.familyService.savePerson(updatedPerson);
+
+      // Logout sau khi cập nhật xong
+      await this.authService.logout();
+
+      this.registerComp?.onRegisterDone();
+    } catch (e: any) {
+      let msg = 'Đăng ký thất bại.';
+      if (e.code === 'auth/email-already-in-use') {
+        msg = 'Số điện thoại này đã được đăng ký.';
+      } else if (e.code === 'auth/weak-password') {
+        msg = 'Mật khẩu phải có ít nhất 6 ký tự.';
+      } else if (e.message) {
+        msg = e.message;
+      }
+      this.registerComp?.onRegisterError(msg);
+    }
+  }
+
+  onRegisterSuccess(): void {
+    this.currentView = 'login';
+  }
+
+  // --- Auto-login helper ---
+
+  private async loadUserAndNavigate(uid: string): Promise<void> {
+    try {
+      const userData = await this.authService.getUserData(uid);
+      if (userData?.personId) {
+        // Chờ data load xong (có thể Firestore chưa emit)
+        const tryLoad = () => {
+          const person = this.familyService.getPersonById(userData.personId);
+          if (person) {
+            this.homePerson = person;
+            this.currentPerson = { ...person };
+            this.currentView = 'detail';
+            return true;
+          }
+          return false;
+        };
+
+        if (!tryLoad()) {
+          // Thử lại sau 2s khi data đã load
+          setTimeout(() => {
+            if (!tryLoad()) {
+              this.currentView = 'generations';
+            }
+          }, 2000);
+        }
+      }
+    } catch {
+      // Không có user data → có thể là admin Google login
+      // Giữ nguyên ở login hoặc cho vào generations
+    }
+  }
+
+  // --- Logout ---
 
   async logout(): Promise<void> {
     await this.authService.logout();
+    this.homePerson = undefined;
+    this.currentPerson = undefined;
+    this.historyStack = [];
+    this.currentView = 'login';
   }
 
-  onNameSubmitted(name: string): void {
-    this.nameError = '';
-    let person = this.familyService.getPersonByName(name);
-    if (!person) {
-      const results = this.familyService.searchPeople(name);
-      if (results.length === 1) {
-        person = results[0];
-      } else if (results.length > 1) {
-        this.currentView = 'search';
-        return;
-      } else {
-        this.nameError = `Không tìm thấy "${name}" trong gia phả. Có thể "${name}" chưa được thêm, hãy tìm tên Cha-Mẹ. Vui lòng kiểm tra lại hoặc nhấn "Xem tất cả".`;
-        return;
-      }
-    }
-    this.homePerson = person;
-    this.currentPerson = { ...person };
-    this.currentView = 'detail';
-  }
-
-  onBrowseAll(): void {
-    this.currentView = 'generations';
-  }
+  // --- Navigation ---
 
   navigateToPerson(id: string): void {
     const person = this.familyService.getPersonById(id);
@@ -445,7 +548,7 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
     }
-    this.currentView = 'popup';
+    this.currentView = 'login';
   }
 
   showTree(): void {

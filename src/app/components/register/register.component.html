@@ -1,0 +1,50 @@
+<div class="overlay">
+  <div class="popup">
+    <div class="popup-header">
+      <h2>Đăng Ký Tài Khoản</h2>
+      <p>Gia Phả Họ Đỗ - Xuân Thượng</p>
+    </div>
+    <div class="popup-body">
+      <label for="nameInput">Họ Tên</label>
+      <input
+        id="nameInput"
+        type="text"
+        [(ngModel)]="hoTen"
+        placeholder="VD: Đỗ Văn A"
+        (keyup.enter)="phoneInput.focus()"
+        autofocus
+      />
+
+      <label for="phoneInput">Số điện thoại</label>
+      <input
+        #phoneInput
+        id="phoneInput"
+        type="tel"
+        [(ngModel)]="phone"
+        placeholder="VD: 0912345678"
+        (keyup.enter)="passwordInput.focus()"
+      />
+
+      <label for="passwordInput">Mật khẩu</label>
+      <input
+        #passwordInput
+        id="passwordInput"
+        type="password"
+        [(ngModel)]="password"
+        placeholder="Tối thiểu 6 ký tự"
+        (keyup.enter)="submit()"
+      />
+
+      <button class="btn-primary" (click)="submit()" [disabled]="!canSubmit() || loading">
+        {{ loading ? 'Đang xử lý...' : 'Đăng ký' }}
+      </button>
+
+      <p class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</p>
+      <p class="success-msg" *ngIf="successMessage">{{ successMessage }}</p>
+
+      <button class="btn-link" (click)="goLogin()">
+        ← Quay lại đăng nhập
+      </button>
+    </div>
+  </div>
+</div>

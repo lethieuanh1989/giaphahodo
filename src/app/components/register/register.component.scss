@@ -1,0 +1,98 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+.popup {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 380px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.popup-header {
+  background: linear-gradient(135deg, #8B0000, #CD853F);
+  color: #fff;
+  padding: 24px 20px;
+  text-align: center;
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  p {
+    margin: 4px 0 0;
+    opacity: 0.9;
+    font-size: 14px;
+  }
+}
+.popup-body {
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+label {
+  font-size: 14px;
+  color: #555;
+  font-weight: 500;
+}
+input {
+  padding: 12px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #8B0000;
+  }
+}
+.btn-primary {
+  padding: 12px;
+  background: #8B0000;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 4px;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+.error-msg {
+  color: #c00;
+  font-size: 13px;
+  margin: 0;
+  text-align: center;
+  line-height: 1.4;
+}
+.success-msg {
+  color: #2e7d32;
+  font-size: 13px;
+  margin: 0;
+  text-align: center;
+  line-height: 1.4;
+}
+.btn-link {
+  padding: 10px;
+  background: transparent;
+  color: #8B0000;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+}
