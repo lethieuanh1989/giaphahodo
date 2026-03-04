@@ -9,16 +9,19 @@ export class FamilyService {
   private firebaseService = inject(FirebaseService);
   private people$ = new BehaviorSubject<Person[]>([]);
   private allPeople$ = new BehaviorSubject<Person[]>([]);
+  private spouses$ = new BehaviorSubject<Person[]>([]);
   private branchDataMap = new Map<BranchKey, Person[]>();
   private branchSubs = new Map<BranchKey, Subscription>();
   private currentBranch$ = new BehaviorSubject<BranchKey>('chung');
   private peopleSub?: Subscription;
+  private spouseSub?: Subscription;
   private seeding = false;
 
   constructor() {
     console.log('[GP-DEBUG] FamilyService constructor, defaultBranch:', this.currentBranch$.value);
     this.loadAllBranches();
     this.loadBranch(this.currentBranch$.value);
+    this.loadSpouses();
   }
 
   // --- Branch management ---
@@ -109,6 +112,18 @@ export class FamilyService {
         this.rebuildAllPeople();
       }
     }
+  }
+
+  private loadSpouses(): void {
+    this.spouseSub = this.firebaseService.getSpouses().subscribe({
+      next: spouses => {
+        console.log(`[GP-DEBUG] loadSpouses() received ${spouses.length} spouses`);
+        this.spouses$.next(spouses);
+      },
+      error: err => {
+        console.error('[GP-DEBUG] loadSpouses() ERROR:', err);
+      },
+    });
   }
 
   private rebuildAllPeople(): void {
@@ -202,12 +217,44 @@ export class FamilyService {
     const results = this.allPeople$.value.filter(
       p =>
         p.hoTen.toLowerCase().includes(normalized) ||
+        (p.hoTenVoChong && p.hoTenVoChong.toLowerCase().includes(normalized)) ||
         (p.diaChiHienTai && p.diaChiHienTai.toLowerCase().includes(normalized)) ||
         (p.soDienThoai && p.soDienThoai.includes(normalized)) ||
         (p.doiThu && p.doiThu.toString() === normalized)
     );
     console.log(`[GP-DEBUG] searchPeople('${query}') → ${results.length} results:`, results.map(p => `${p.id}|${p.hoTen}`));
     return results;
+  }
+
+  // --- Spouses (vợ/chồng ngoài họ Đỗ) ---
+
+  getSpouses(): Person[] {
+    return this.spouses$.value;
+  }
+
+  getSpouseById(id: string): Person | undefined {
+    return this.spouses$.value.find(p => p.id === id);
+  }
+
+  /** Tìm thành viên họ Đỗ có hoTenVoChong khớp */
+  getPersonBySpouseName(name: string): Person | undefined {
+    const normalized = name.trim().toLowerCase();
+    return this.allPeople$.value.find(
+      p => p.hoTenVoChong && p.hoTenVoChong.toLowerCase() === normalized
+    );
+  }
+
+  async saveSpouse(person: Person): Promise<void> {
+    await this.firebaseService.saveSpouse(person);
+    // Cập nhật local
+    const current = this.spouses$.value;
+    const idx = current.findIndex(p => p.id === person.id);
+    if (idx >= 0) {
+      current[idx] = { ...person };
+      this.spouses$.next([...current]);
+    } else {
+      this.spouses$.next([...current, person]);
+    }
   }
 
   /** Xóa tất cả duplicates cùng tên, chỉ giữ lại bản đầu tiên (theo ID ngắn nhất = bản gốc) */

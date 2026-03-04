@@ -15,7 +15,7 @@ import { FamilyService } from '../../services/family.service';
           type="text"
           [(ngModel)]="query"
           (ngModelChange)="onSearch()"
-          placeholder="Tìm theo tên, địa chỉ, SĐT, đời..."
+          placeholder="Tìm theo tên, tên vợ/chồng, địa chỉ, SĐT..."
           autofocus
         />
       </div>
@@ -36,6 +36,9 @@ import { FamilyService } from '../../services/family.service';
               Đời {{ p.doiThu }}
               <span *ngIf="p.viTri"> · {{ p.viTri }}</span>
               <span class="result-id"> · {{ p.id }}</span>
+            </div>
+            <div class="result-meta spouse-info" *ngIf="p.hoTenVoChong">
+              <span class="spouse-label">Vợ/Chồng:</span> {{ p.hoTenVoChong }}
             </div>
             <div class="result-meta" *ngIf="p.diaChiHienTai">{{ p.diaChiHienTai }}</div>
           </div>
@@ -123,6 +126,12 @@ import { FamilyService } from '../../services/family.service';
     .result-id {
       font-size: 11px;
       color: #bbb;
+    }
+    .spouse-info {
+      color: #8B0000;
+    }
+    .spouse-label {
+      font-weight: 500;
     }
     .no-results {
       text-align: center;

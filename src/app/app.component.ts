@@ -472,7 +472,8 @@ export class AppComponent implements OnInit, OnDestroy {
       const userData = await this.authService.signInWithPhone(phone, password);
       this.currentUserUid = this.authService.currentUser?.uid || '';
       this.currentUserName = userData.hoTen || '';
-      const person = this.familyService.getPersonById(userData.personId);
+
+      const person = this.findPerson(userData.personId);
       if (person) {
         this.homePerson = person;
         this.currentPerson = { ...person };
@@ -480,7 +481,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } else {
         // Person chưa load xong, thử lại sau 2s
         setTimeout(() => {
-          const p = this.familyService.getPersonById(userData.personId);
+          const p = this.findPerson(userData.personId);
           if (p) {
             this.homePerson = p;
             this.currentPerson = { ...p };
@@ -511,26 +512,36 @@ export class AppComponent implements OnInit, OnDestroy {
   // --- Register ---
 
   async onRegisterAttempt(data: { hoTen: string; phone: string; password: string }): Promise<void> {
-    // Verify tên có trong gia phả
+    // 1. Tìm trong gia phả họ Đỗ
     const person = this.familyService.getPersonByName(data.hoTen);
-    if (!person) {
-      // Thử tìm gần đúng
-      const results = this.familyService.searchPeople(data.hoTen);
-      if (results.length === 0) {
-        this.registerComp?.onRegisterError('Bạn không có tên trong gia phả họ Đỗ - Xuân Thượng hoặc dữ liệu của bạn chưa được thêm vào gia phả.');
-        return;
-      }
-      if (results.length === 1) {
-        // Tìm đúng 1 kết quả gần đúng → dùng luôn
-        await this.doRegister(results[0], data.phone, data.password);
-        return;
-      }
-      // Nhiều kết quả → yêu cầu nhập chính xác
-      this.registerComp?.onRegisterError('Tìm thấy nhiều tên tương tự. Vui lòng nhập chính xác họ tên trong gia phả.');
+    if (person) {
+      await this.doRegister(person, data.phone, data.password);
       return;
     }
 
-    await this.doRegister(person, data.phone, data.password);
+    // 2. Tìm gần đúng trong gia phả (chỉ tìm theo hoTen, không theo hoTenVoChong)
+    const normalized = data.hoTen.trim().toLowerCase();
+    const results = this.familyService.searchPeople(data.hoTen).filter(
+      (p: Person) => p.hoTen.toLowerCase().includes(normalized)
+    );
+    if (results.length === 1) {
+      await this.doRegister(results[0], data.phone, data.password);
+      return;
+    }
+
+    // 3. Kiểm tra có phải vợ/chồng không (tìm theo hoTenVoChong)
+    const familyMember = this.familyService.getPersonBySpouseName(data.hoTen);
+    if (familyMember) {
+      await this.doRegisterSpouse(data.hoTen, familyMember, data.phone, data.password);
+      return;
+    }
+
+    // 4. Không tìm thấy
+    if (results.length > 1) {
+      this.registerComp?.onRegisterError('Tìm thấy nhiều tên tương tự. Vui lòng nhập chính xác họ tên trong gia phả.');
+    } else {
+      this.registerComp?.onRegisterError('Bạn không có tên trong gia phả họ Đỗ - Xuân Thượng hoặc dữ liệu của bạn chưa được thêm vào gia phả.');
+    }
   }
 
   private async doRegister(person: Person, phone: string, password: string): Promise<void> {
@@ -546,20 +557,63 @@ export class AppComponent implements OnInit, OnDestroy {
 
       this.registerComp?.onRegisterDone();
     } catch (e: any) {
-      let msg = 'Đăng ký thất bại.';
-      if (e.code === 'auth/email-already-in-use') {
-        msg = 'Số điện thoại này đã được đăng ký.';
-      } else if (e.code === 'auth/weak-password') {
-        msg = 'Mật khẩu phải có ít nhất 6 ký tự.';
-      } else if (e.message) {
-        msg = e.message;
-      }
-      this.registerComp?.onRegisterError(msg);
+      this.handleRegisterError(e);
     }
+  }
+
+  private async doRegisterSpouse(
+    spouseName: string, familyMember: Person, phone: string, password: string
+  ): Promise<void> {
+    try {
+      const spouseId = 'spouse-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+      const spousePerson: Person = {
+        id: spouseId,
+        hoTen: spouseName,
+        doiThu: familyMember.doiThu,
+        soDienThoai: phone,
+        voChongId: familyMember.id,
+        hoTenVoChong: familyMember.hoTen,
+        conIds: [],
+        anhChiEmIds: [],
+      };
+
+      await this.authService.register(spouseName, phone, password, spouseId);
+      await this.familyService.saveSpouse(spousePerson);
+
+      // Cập nhật voChongId cho thành viên gia phả nếu chưa có
+      if (!familyMember.voChongId) {
+        await this.familyService.savePerson({ ...familyMember, voChongId: spouseId });
+      }
+
+      await this.authService.logout();
+      this.registerComp?.onRegisterDone();
+    } catch (e: any) {
+      this.handleRegisterError(e);
+    }
+  }
+
+  private handleRegisterError(e: any): void {
+    let msg = 'Đăng ký thất bại.';
+    if (e.code === 'auth/email-already-in-use') {
+      msg = 'Số điện thoại này đã được đăng ký.';
+    } else if (e.code === 'auth/weak-password') {
+      msg = 'Mật khẩu phải có ít nhất 6 ký tự.';
+    } else if (e.message) {
+      msg = e.message;
+    }
+    this.registerComp?.onRegisterError(msg);
   }
 
   onRegisterSuccess(): void {
     this.currentView = 'login';
+  }
+
+  /** Tìm person trong gia phả hoặc spouses */
+  private findPerson(personId: string): Person | undefined {
+    if (personId.startsWith('spouse-')) {
+      return this.familyService.getSpouseById(personId);
+    }
+    return this.familyService.getPersonById(personId);
   }
 
   // --- Auto-login helper ---
@@ -571,7 +625,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.currentUserName = userData.hoTen || '';
         // Chờ data load xong (có thể Firestore chưa emit)
         const tryLoad = () => {
-          const person = this.familyService.getPersonById(userData.personId);
+          const person = this.findPerson(userData.personId);
           if (person) {
             this.homePerson = person;
             this.currentPerson = { ...person };

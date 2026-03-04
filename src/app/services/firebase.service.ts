@@ -124,6 +124,27 @@ export class FirebaseService {
     return snapshot.exists() ? (snapshot.data() as Record<string, any>) : null;
   }
 
+  // --- Spouses (vợ/chồng ngoài họ Đỗ) ---
+
+  getSpouses(): Observable<Person[]> {
+    const col = collection(this.firestore, 'spouses');
+    return collectionData(col, { idField: 'id' }).pipe(
+      map(docs => docs as Person[])
+    );
+  }
+
+  async saveSpouse(person: Person): Promise<void> {
+    const docRef = doc(this.firestore, 'spouses', person.id);
+    const data = this.stripUndefined({ ...person, updatedAt: new Date().toISOString() });
+    await setDoc(docRef, data, { merge: true });
+  }
+
+  async getSpouseById(id: string): Promise<Person | null> {
+    const docRef = doc(this.firestore, 'spouses', id);
+    const snapshot = await getDoc(docRef);
+    return snapshot.exists() ? (snapshot.data() as Person) : null;
+  }
+
   // --- Chat messages ---
 
   getChatMessages(): Observable<Record<string, any>[]> {
